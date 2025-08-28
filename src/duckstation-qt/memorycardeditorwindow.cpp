@@ -106,7 +106,7 @@ public:
 
         // ...then scale any remainder using bilinear interpolation.
         if (scaled_icon_size - integer_icon_size > 0)
-            src_image = src_image.scaled(icon_size, icon_size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            src_image = src_image.scaled(scaled_icon_size, scaled_icon_size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
       }
 
       src_image.setDevicePixelRatio(dpr);
