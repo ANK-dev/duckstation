@@ -67,4 +67,9 @@ private:
   u16 m_button_mask = UINT16_C(0xFFFF);
 
   TransferState m_transfer_state = TransferState::Idle;
+
+  // desired ON frames in window (0..BRESENHAM_PDM_WINDOW)
+  std::array<int, static_cast<size_t>(Button::Count)> m_bres_on = {0};
+  // accumulator
+  std::array<int, static_cast<size_t>(Button::Count)> m_bres_err = {0};
 };

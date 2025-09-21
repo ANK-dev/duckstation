@@ -168,4 +168,9 @@ private:
 
   // both directions of axis state, merged to m_axis_state
   std::array<u8, static_cast<u32>(HalfAxis::Count)> m_half_axis_state{};
+
+  // desired ON frames in window (0..BRESENHAM_PDM_WINDOW)
+  std::array<int, static_cast<size_t>(Button::Count)> m_bres_on = {0};
+  // accumulator
+  std::array<int, static_cast<size_t>(Button::Count)> m_bres_err = {0};
 };

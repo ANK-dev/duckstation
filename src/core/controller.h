@@ -52,6 +52,8 @@ public:
   static constexpr float DEFAULT_STICK_SENSITIVITY = 1.33f;
   static constexpr float DEFAULT_BUTTON_DEADZONE = 0.25f;
 
+  static constexpr u16 BRESENHAM_PDM_WINDOW = 1024;
+
   explicit Controller(u32 index);
   virtual ~Controller();
 
@@ -72,6 +74,42 @@ public:
 
   /// Changes the specified bind state. Values are normalized from -1..1.
   virtual void SetBindState(u32 index, float value);
+
+  /// Pulse-Density Modulation using Bresenham's Algorithm
+  /// Returns if a button should be pressed for this frame
+  template<std::size_t N>
+  bool BresenhamPDM(u32 index, float value, std::array<int, N>& bres_on, std::array<int, N>& bres_err)
+  {
+    // Compute desired ON count in window (clamped)
+    int want = static_cast<int>(std::round(value * BRESENHAM_PDM_WINDOW));
+
+    if (want < 0)
+      want = 0;
+    if (want > BRESENHAM_PDM_WINDOW)
+      want = BRESENHAM_PDM_WINDOW;
+    bres_on[index] = want;
+
+    // If trivial cases, short-circuit
+    if (bres_on[index] == 0)
+    {
+      bres_err[index] = 0;
+      return false;
+    }
+    if (bres_on[index] == BRESENHAM_PDM_WINDOW)
+    {
+      bres_err[index] = 0;
+      return true;
+    }
+
+    // Bresenham-style accumulator
+    bres_err[index] += bres_on[index];
+    if (bres_err[index] >= BRESENHAM_PDM_WINDOW)
+    {
+      bres_err[index] -= BRESENHAM_PDM_WINDOW;
+      return true; // ON this frame
+    }
+    return false; // OFF this frame
+  }
 
   /// Returns a bitmask of the current button states, 1 = on.
   virtual u32 GetButtonStateBits() const;

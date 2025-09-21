@@ -11,6 +11,8 @@
 
 #include "common/assert.h"
 #include "common/bitutils.h"
+#include "common/log.h"
+#include <iostream>
 
 DigitalController::DigitalController(u32 index, u16 button_mask) : Controller(index), m_button_mask(button_mask)
 {
@@ -59,7 +61,9 @@ void DigitalController::SetBindState(u32 index, float value)
   if (index >= static_cast<u32>(Button::Count))
     return;
 
-  const bool pressed = (value >= 0.5f);
+  std::cout << "index: " << index << ", value: " << value << "\n";
+  const bool pressed = Controller::BresenhamPDM(index, value, m_bres_on, m_bres_err);
+
   const u16 bit = u16(1) << static_cast<u8>(index);
   if (pressed)
   {

@@ -271,7 +271,9 @@ void AnalogController::SetBindState(u32 index, float value)
 
   const u16 bit = u16(1) << static_cast<u8>(index);
 
-  if (value >= m_button_deadzone)
+  const bool pressed = Controller::BresenhamPDM(index, value, m_bres_on, m_bres_err);
+
+  if (pressed && value >= m_button_deadzone)
   {
     if (m_button_state & bit)
       System::SetRunaheadReplayFlag(false);

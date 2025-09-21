@@ -540,14 +540,46 @@ void SDLInputSource::PollEvents()
   if (!ALLOW_EVENT_POLLING)
     return;
 
+  static SDL_Event left_trigger_event;
+  static SDL_Event right_trigger_event;
+  static SDL_Event left_stick_x_event;
+  static SDL_Event left_stick_y_event;
+
   for (;;)
   {
     SDL_Event ev;
+
     if (SDL_PollEvent(&ev))
+    {
+      if (ev.type == SDL_EventType::SDL_EVENT_GAMEPAD_AXIS_MOTION)
+      {
+        switch (ev.gaxis.axis)
+        {
+          case SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
+            left_trigger_event = ev;
+            continue;
+          case SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
+            right_trigger_event = ev;
+            continue;
+          case SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTX:
+            left_stick_x_event = ev;
+            continue;
+          case SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTY:
+            left_stick_y_event = ev;
+            continue;
+        }
+      }
+
       ProcessSDLEvent(&ev);
+    }
     else
       break;
   }
+
+  ProcessSDLEvent(&left_trigger_event);
+  ProcessSDLEvent(&right_trigger_event);
+  ProcessSDLEvent(&left_stick_x_event);
+  ProcessSDLEvent(&left_stick_y_event);
 }
 
 InputManager::DeviceList SDLInputSource::EnumerateDevices()
