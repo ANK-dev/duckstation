@@ -62,7 +62,8 @@ void DigitalController::SetBindState(u32 index, float value)
     return;
 
   std::cout << "index: " << index << ", value: " << value << "\n";
-  const bool pressed = Controller::BresenhamPDM(index, value, m_bres_on, m_bres_err);
+  //const bool pressed = Controller::BresenhamPDM(index, value, m_bres_on, m_bres_err);
+  const bool pressed = Controller::PWM(index, value);
 
   const u16 bit = u16(1) << static_cast<u8>(index);
   if (pressed)

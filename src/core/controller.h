@@ -53,6 +53,7 @@ public:
   static constexpr float DEFAULT_BUTTON_DEADZONE = 0.25f;
 
   static constexpr u16 BRESENHAM_PDM_WINDOW = 1024;
+  static constexpr u16 PWM_WINDOW = 60;
 
   explicit Controller(u32 index);
   virtual ~Controller();
@@ -109,6 +110,20 @@ public:
       return true; // ON this frame
     }
     return false; // OFF this frame
+  }
+
+  bool PWM(u32 index, float value)
+  { 
+    static int frame_in_period = -1;
+    frame_in_period = (frame_in_period + 1) % PWM_WINDOW;
+
+    if (value <= 0.0f)
+      return false;
+    if (value >= 1.0f)
+      return true;
+    int on_frames = static_cast<int>(std::round(value * PWM_WINDOW));
+
+    return frame_in_period < on_frames;
   }
 
   /// Returns a bitmask of the current button states, 1 = on.

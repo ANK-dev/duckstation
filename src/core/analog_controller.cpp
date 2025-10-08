@@ -271,7 +271,8 @@ void AnalogController::SetBindState(u32 index, float value)
 
   const u16 bit = u16(1) << static_cast<u8>(index);
 
-  const bool pressed = Controller::BresenhamPDM(index, value, m_bres_on, m_bres_err);
+  //const bool pressed = Controller::BresenhamPDM(index, value, m_bres_on, m_bres_err);
+  const bool pressed = Controller::PWM(index, value);
 
   if (pressed && value >= m_button_deadzone)
   {
