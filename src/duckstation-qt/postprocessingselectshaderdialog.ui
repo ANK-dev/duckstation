@@ -37,6 +37,9 @@
    </item>
    <item>
     <widget class="QTreeWidget" name="shaderList">
+     <property name="selectionMode">
+      <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
+     </property>
      <attribute name="headerVisible">
       <bool>false</bool>
      </attribute>

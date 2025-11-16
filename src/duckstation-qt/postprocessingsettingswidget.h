@@ -115,7 +115,7 @@ public:
   explicit PostProcessingSelectShaderDialog(QWidget* parent);
   ~PostProcessingSelectShaderDialog();
 
-  std::string getSelectedShader() const;
+  std::vector<std::string> getSelectedShaders() const;
 
 private:
   enum ItemRoles

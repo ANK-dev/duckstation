@@ -189,20 +189,23 @@ void PostProcessingChainConfigWidget::onAddButtonClicked()
   dialog->setAttribute(Qt::WA_DeleteOnClose);
 
   connect(dialog, &QDialog::accepted, this, [this, dialog]() {
-    const std::string selected_shader = dialog->getSelectedShader();
-    if (selected_shader.empty())
+    const std::vector<std::string> selected_shaders = dialog->getSelectedShaders();
+    if (selected_shaders.empty())
       return;
 
     auto lock = Host::GetSettingsLock();
     SettingsInterface& si = getSettingsInterfaceToUpdate();
 
-    Error error;
-    if (!PostProcessing::Config::AddStage(si, m_section, selected_shader, &error))
+    for (auto& selected_shader : selected_shaders)
     {
-      lock.unlock();
-      QtUtils::MessageBoxCritical(this, tr("Error"),
-                                  tr("Failed to add shader: %1").arg(QString::fromStdString(error.GetDescription())));
-      return;
+      Error error;
+      if (!PostProcessing::Config::AddStage(si, m_section, selected_shader, &error))
+      {
+        lock.unlock();
+        QtUtils::MessageBoxCritical(this, tr("Error"),
+                                    tr("Failed to add shader: %1").arg(QString::fromStdString(error.GetDescription())));
+        return;
+      }
     }
 
     updateList(si);
@@ -687,13 +690,31 @@ PostProcessingSelectShaderDialog::PostProcessingSelectShaderDialog(QWidget* pare
 
 PostProcessingSelectShaderDialog::~PostProcessingSelectShaderDialog() = default;
 
-std::string PostProcessingSelectShaderDialog::getSelectedShader() const
+std::vector<std::string> PostProcessingSelectShaderDialog::getSelectedShaders() const
 {
-  std::string ret;
-
+  static constexpr const auto is_directory = [](QTreeWidgetItem* item) { return item->childCount() > 0; };
+  std::vector<std::string> ret;
   QList<QTreeWidgetItem*> selected_items = m_ui.shaderList->selectedItems();
-  if (!selected_items.empty())
-    ret = selected_items.first()->data(0, Qt::UserRole).toString().toStdString();
+  QStack<QTreeWidgetItem*> stack;
+
+  for (const auto& item : selected_items | std::views::reverse)
+    stack.push(item);
+
+  while (!stack.isEmpty())
+  {
+    QTreeWidgetItem* item = stack.pop();
+    std::string item_name = item->data(0, Qt::UserRole).toString().toStdString();
+
+    if (is_directory(item))
+    {
+      QList<QTreeWidgetItem*> children = item->takeChildren();
+
+      for (const auto& child : children | std::views::reverse)
+        stack.push(child);
+    }
+    else if (item_name.length() > 0)
+      ret.push_back(item_name);
+  }
 
   return ret;
 }
