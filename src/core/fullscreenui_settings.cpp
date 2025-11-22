@@ -3739,6 +3739,10 @@ void FullscreenUI::DrawGraphicsSettingsPage()
                     FSUI_VSTR("Smooths out blockyness between colour transitions in 24-bit content, usually FMVs."),
                     "GPU", "ChromaSmoothing24Bit", false);
 
+  DrawToggleSetting(bsi, FSUI_ICONVSTR(ICON_FA_BRUSH, "FMV Noise Smoothing"),
+                    FSUI_VSTR("Smooths out noise such as compression artifacts in 24-bit content, usually FMVs."),
+                    "GPU", "NoiseSmoothing24Bit", false);
+
   MenuHeading(FSUI_VSTR("Advanced"));
 
   std::optional<SmallString> strvalue = bsi->GetOptionalSmallStringValue(

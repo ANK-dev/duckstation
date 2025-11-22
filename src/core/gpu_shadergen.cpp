@@ -322,3 +322,83 @@ float3 SampleVRAMAverage2x2(uint2 icoords)
 
   return std::move(ss).str();
 }
+
+// TODO: Fix hardcoded dx and dy and cleanup
+std::string GPUShaderGen::GenerateNoiseSmoothingFragmentShader() const
+{
+  std::stringstream ss;
+  WriteHeader(ss);
+
+  // SourceSize.xy = size, SourceSize.zw = 1/size
+  DeclareUniformBuffer(ss, {"float4 u_src_size"}, true);
+  DeclareTexture(ss, "samp0", 0, false);
+
+  // Based on
+  // https://github.com/libretro/slang-shaders/blob/master/denoisers/shaders/fast-bilateral.slang 
+  DeclareFragmentEntryPoint(ss, 0, 1);
+  ss << R"(
+{
+    // Amount of blurring
+    CONSTANT float SIGMA_R = 0.7;
+
+    float sigma_d = 3.0;
+    float sigma_r = SIGMA_R * 0.04;
+
+    float sd2 = 2.0 * sigma_d * sigma_d;
+    float si2 = 2.0 * sigma_r * sigma_r;
+
+    //float2 dx = float2(1.0, 0.0) * u_src_size.zw;
+    //float2 dy = float2(0.0, 1.0) * u_src_size.zw;
+
+    float2 dx = float2(1.0 / 320.0, 0.0);
+    float2 dy = float2(0.0, 1.0 / 240.0);
+
+    float2 tc = v_tex0;
+
+    float3 color = float3(0.0, 0.0, 0.0);
+    float3 wsum  = float3(0.0, 0.0, 0.0);
+
+    float3 center = SAMPLE_TEXTURE(samp0, tc).rgb;
+
+    float3 col;
+    float ds;
+    float3 weight;
+
+#define GET(M,K) SAMPLE_TEXTURE( \
+        samp0, \
+        tc + float2(float(M), 0.0) * dx + float2(0.0, float(K)) * dy \
+    ).rgb
+
+#define BIL(M,K) { \
+        float3 col = GET(M,K); \
+        float ds = float((M)*(M) + (K)*(K)); \
+        float space_w = exp(-ds / sd2); \
+        float3 diff = col - center; \
+        float3 radial = diff * diff; \
+        float3 range_w = float3( \
+            exp(-radial.x / si2), \
+            exp(-radial.y / si2), \
+            exp(-radial.z / si2)); \
+        float3 weight = space_w * range_w; \
+        color += weight * col; \
+        wsum  += weight; \
+    }
+
+    BIL(-2,-2) BIL(-1,-2) BIL(0,-2) BIL(1,-2) BIL(2,-2)
+    BIL(-2,-1) BIL(-1,-1) BIL(0,-1) BIL(1,-1) BIL(2,-1)
+    BIL(-2, 0) BIL(-1, 0) BIL(0, 0) BIL(1, 0) BIL(2, 0)
+    BIL(-2, 1) BIL(-1, 1) BIL(0, 1) BIL(1, 1) BIL(2, 1)
+    BIL(-2, 2) BIL(-1, 2) BIL(0, 2) BIL(1, 2) BIL(2, 2)
+
+#undef GET
+#undef BIL
+
+    // Weight normalization
+    color /= wsum;
+    o_col0 = float4(color, 1.0f);
+}
+)";
+  return ss.str();
+}
+
+

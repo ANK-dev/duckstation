@@ -4126,6 +4126,15 @@ void GPU_HW::UpdateDisplay(const GPUBackendUpdateDisplayCommand* cmd)
           m_presenter.Deinterlace(interlaced_field);
       }
     }
+    else if (g_gpu_settings.display_24bit_noise_smoothing)
+    {
+      if (m_presenter.ApplyNoiseSmoothing())
+      {
+        if (interlaced)
+          m_presenter.Deinterlace(interlaced_field);
+      }
+
+    }
     else
     {
       if (interlaced)

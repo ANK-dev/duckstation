@@ -21,6 +21,7 @@ public:
   std::string GenerateFastMADReconstructFragmentShader() const;
 
   std::string GenerateChromaSmoothingFragmentShader() const;
+  std::string GenerateNoiseSmoothingFragmentShader() const;
 
 private:
   void WriteDisplayUniformBuffer(std::stringstream& ss) const;

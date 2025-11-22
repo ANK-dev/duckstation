@@ -4572,6 +4572,7 @@ void System::CheckForSettingsChanges(const Settings& old_settings)
              g_settings.gpu_texture_cache != old_settings.gpu_texture_cache ||
              g_settings.display_deinterlacing_mode != old_settings.display_deinterlacing_mode ||
              g_settings.display_24bit_chroma_smoothing != old_settings.display_24bit_chroma_smoothing ||
+             g_settings.display_24bit_noise_smoothing != old_settings.display_24bit_noise_smoothing ||
              g_settings.display_aspect_ratio != old_settings.display_aspect_ratio ||
              g_settings.display_scaling != old_settings.display_scaling ||
              g_settings.display_scaling_24bit != old_settings.display_scaling_24bit ||
@@ -4915,6 +4916,8 @@ void System::WarnAboutUnsafeSettings()
       append(TRANSLATE_SV("System", "GPU texture cache disabled."));
     if (g_settings.display_24bit_chroma_smoothing)
       append(TRANSLATE_SV("System", "FMV chroma smoothing disabled."));
+    if (g_settings.display_24bit_noise_smoothing)
+      append(TRANSLATE_SV("System", "FMV noise smoothing disabled."));
     if (g_settings.cdrom_read_speedup != 1)
       append(TRANSLATE_SV("System", "CD-ROM read speedup disabled."));
     if (g_settings.cdrom_seek_speedup != 1)

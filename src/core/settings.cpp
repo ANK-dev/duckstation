@@ -291,6 +291,7 @@ void Settings::Load(const SettingsInterface& si, const SettingsInterface& contro
   gpu_widescreen_rendering = gpu_widescreen_hack = si.GetBoolValue("GPU", "WidescreenHack", false);
   gpu_texture_cache = si.GetBoolValue("GPU", "EnableTextureCache", false);
   display_24bit_chroma_smoothing = si.GetBoolValue("GPU", "ChromaSmoothing24Bit", false);
+  display_24bit_noise_smoothing = si.GetBoolValue("GPU", "NoiseSmoothing24Bit", false);
   gpu_pgxp_enable = si.GetBoolValue("GPU", "PGXPEnable", false);
   LoadPGXPSettings(si);
   gpu_show_vram = si.GetBoolValue("Debug", "ShowVRAM");
@@ -652,6 +653,7 @@ void Settings::Save(SettingsInterface& si, bool ignore_base) const
   si.SetBoolValue("GPU", "WidescreenHack", gpu_widescreen_rendering);
   si.SetBoolValue("GPU", "EnableTextureCache", gpu_texture_cache);
   si.SetBoolValue("GPU", "ChromaSmoothing24Bit", display_24bit_chroma_smoothing);
+  si.SetBoolValue("GPU", "NoiseSmoothing24Bit", display_24bit_noise_smoothing);
   si.SetBoolValue("GPU", "PGXPEnable", gpu_pgxp_enable);
   si.SetBoolValue("GPU", "PGXPCulling", gpu_pgxp_culling);
   si.SetBoolValue("GPU", "PGXPTextureCorrection", gpu_pgxp_texture_correction);
@@ -1061,6 +1063,7 @@ void Settings::ApplySettingRestrictions()
     gpu_pgxp_enable = false;
     display_deinterlacing_mode = DisplayDeinterlacingMode::Adaptive;
     display_24bit_chroma_smoothing = false;
+    display_24bit_noise_smoothing = false;
     cdrom_read_speedup = 1;
     cdrom_seek_speedup = 1;
     cdrom_mute_cd_audio = false;

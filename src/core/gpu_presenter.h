@@ -59,6 +59,7 @@ public:
   void SetDisplayTexture(GPUTexture* texture, s32 view_x, s32 view_y, s32 view_width, s32 view_height);
   bool Deinterlace(u32 field);
   bool ApplyChromaSmoothing();
+  bool ApplyNoiseSmoothing();
 
   /// Helper function for computing the draw rectangle in a larger window.
   void CalculateDrawRect(s32 window_width, s32 window_height, bool apply_aspect_ratio, bool integer_scale,
@@ -104,7 +105,7 @@ private:
 
   static void SleepUntilPresentTime(u64 present_time);
 
-  bool CompileDisplayPipelines(bool display, bool deinterlace, bool chroma_smoothing, Error* error);
+  bool CompileDisplayPipelines(bool display, bool deinterlace, bool chroma_smoothing, bool noise_smoothing, Error* error);
 
   GPUDevice::PresentResult RenderDisplay(GPUTexture* target, const GSVector2i target_size, bool postfx,
                                          bool apply_aspect_ratio) const;
@@ -146,6 +147,9 @@ private:
 
   std::unique_ptr<GPUPipeline> m_chroma_smoothing_pipeline;
   std::unique_ptr<GPUTexture> m_chroma_smoothing_texture;
+
+  std::unique_ptr<GPUPipeline> m_noise_smoothing_pipeline;
+  std::unique_ptr<GPUTexture> m_noise_smoothing_texture;
 
   std::unique_ptr<GPUPipeline> m_display_pipeline;
   std::unique_ptr<GPUPipeline> m_display_24bit_pipeline;

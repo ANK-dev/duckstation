@@ -334,6 +334,7 @@ TRANSLATE_NOOP("FullscreenUI", "Exit");
 TRANSLATE_NOOP("FullscreenUI", "Exit DuckStation");
 TRANSLATE_NOOP("FullscreenUI", "Exits Big Picture mode, returning to the desktop interface.");
 TRANSLATE_NOOP("FullscreenUI", "FMV Chroma Smoothing");
+TRANSLATE_NOOP("FullscreenUI", "FMV Noise Smoothing");
 TRANSLATE_NOOP("FullscreenUI", "FMV Scaling");
 TRANSLATE_NOOP("FullscreenUI", "Failed to copy cover: {}");
 TRANSLATE_NOOP("FullscreenUI", "Failed to copy text to clipboard.");

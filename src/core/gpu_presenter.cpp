@@ -47,6 +47,7 @@ GPUPresenter::~GPUPresenter()
 {
   DestroyDeinterlaceTextures();
   g_gpu_device->RecycleTexture(std::move(m_chroma_smoothing_texture));
+  g_gpu_device->RecycleTexture(std::move(m_noise_smoothing_texture));
 }
 
 bool GPUPresenter::Initialize(Error* error)
@@ -60,7 +61,8 @@ bool GPUPresenter::Initialize(Error* error)
   if (LoadOverlaySettings())
     LoadOverlayTexture();
 
-  if (!CompileDisplayPipelines(true, true, g_gpu_settings.display_24bit_chroma_smoothing, error))
+  if (!CompileDisplayPipelines(true, true, g_gpu_settings.display_24bit_chroma_smoothing,
+                               g_gpu_settings.display_24bit_noise_smoothing, error))
     return false;
 
   LoadPostProcessingSettings(false);
@@ -73,17 +75,21 @@ bool GPUPresenter::UpdateSettings(const GPUSettings& old_settings, Error* error)
   if (g_gpu_settings.display_scaling != old_settings.display_scaling ||
       g_gpu_settings.display_scaling_24bit != old_settings.display_scaling_24bit ||
       g_gpu_settings.display_deinterlacing_mode != old_settings.display_deinterlacing_mode ||
-      g_gpu_settings.display_24bit_chroma_smoothing != old_settings.display_24bit_chroma_smoothing)
+      g_gpu_settings.display_24bit_chroma_smoothing != old_settings.display_24bit_chroma_smoothing ||
+      g_gpu_settings.display_24bit_noise_smoothing != old_settings.display_24bit_noise_smoothing
+    )
   {
     // Toss buffers on mode change.
     if (g_gpu_settings.display_deinterlacing_mode != old_settings.display_deinterlacing_mode)
       DestroyDeinterlaceTextures();
 
-    if (!CompileDisplayPipelines(
-          g_gpu_settings.display_scaling != old_settings.display_scaling ||
-            g_gpu_settings.display_scaling_24bit != old_settings.display_scaling_24bit,
-          g_gpu_settings.display_deinterlacing_mode != old_settings.display_deinterlacing_mode,
-          g_gpu_settings.display_24bit_chroma_smoothing != old_settings.display_24bit_chroma_smoothing, error))
+    if (!CompileDisplayPipelines(g_gpu_settings.display_scaling != old_settings.display_scaling ||
+                                   g_gpu_settings.display_scaling_24bit != old_settings.display_scaling_24bit,
+                                 g_gpu_settings.display_deinterlacing_mode != old_settings.display_deinterlacing_mode,
+                                 g_gpu_settings.display_24bit_chroma_smoothing !=
+                                   old_settings.display_24bit_chroma_smoothing,
+                                 g_gpu_settings.display_24bit_noise_smoothing != 
+                                   old_settings.display_24bit_noise_smoothing, error))
     {
       Error::AddPrefix(error, "Failed to compile display pipeline on settings change:\n");
       return false;
@@ -93,7 +99,8 @@ bool GPUPresenter::UpdateSettings(const GPUSettings& old_settings, Error* error)
   return true;
 }
 
-bool GPUPresenter::CompileDisplayPipelines(bool display, bool deinterlace, bool chroma_smoothing, Error* error)
+bool GPUPresenter::CompileDisplayPipelines(bool display, bool deinterlace, bool chroma_smoothing, bool noise_smoothing,
+                                           Error* error)
 {
   const GPUShaderGen shadergen(g_gpu_device->GetRenderAPI(), g_gpu_device->GetFeatures().dual_source_blend,
                                g_gpu_device->GetFeatures().framebuffer_fetch);
@@ -373,6 +380,33 @@ bool GPUPresenter::CompileDisplayPipelines(bool display, bool deinterlace, bool 
       if (!(m_chroma_smoothing_pipeline = g_gpu_device->CreatePipeline(plconfig, error)))
         return false;
       GL_OBJECT_NAME(m_chroma_smoothing_pipeline, "Chroma Smoothing Pipeline");
+    }
+  }
+
+  if (noise_smoothing)
+  {
+    m_noise_smoothing_pipeline.reset();
+    g_gpu_device->RecycleTexture(std::move(m_noise_smoothing_texture));
+
+    if (g_gpu_settings.display_24bit_noise_smoothing)
+    {
+      plconfig.layout = GPUPipeline::Layout::SingleTextureAndPushConstants;
+      plconfig.SetTargetFormats(GPUTexture::Format::RGBA8);
+
+      std::unique_ptr<GPUShader> vso = g_gpu_device->CreateShader(GPUShaderStage::Vertex, shadergen.GetLanguage(),
+                                                                  shadergen.GenerateScreenQuadVertexShader(), error);
+      std::unique_ptr<GPUShader> fso = g_gpu_device->CreateShader(
+        GPUShaderStage::Fragment, shadergen.GetLanguage(), shadergen.GenerateNoiseSmoothingFragmentShader(), error);
+      if (!vso || !fso)
+        return false;
+      GL_OBJECT_NAME(vso, "Noise Smoothing Vertex Shader");
+      GL_OBJECT_NAME(fso, "Noise Smoothing Fragment Shader");
+
+      plconfig.vertex_shader = vso.get();
+      plconfig.fragment_shader = fso.get();
+      if (!(m_noise_smoothing_pipeline = g_gpu_device->CreatePipeline(plconfig, error)))
+        return false;
+      GL_OBJECT_NAME(m_noise_smoothing_pipeline, "Noise Smoothing Pipeline");
     }
   }
 
@@ -1204,6 +1238,38 @@ bool GPUPresenter::ApplyChromaSmoothing()
   return true;
 }
 
+bool GPUPresenter::ApplyNoiseSmoothing()
+{
+  const u32 x = m_display_texture_view_x;
+  const u32 y = m_display_texture_view_y;
+  const u32 width = m_display_texture_view_width;
+  const u32 height = m_display_texture_view_height;
+  if (!g_gpu_device->ResizeTexture(&m_noise_smoothing_texture, width, height, GPUTexture::Type::RenderTarget,
+                                   GPUTexture::Format::RGBA8, GPUTexture::Flags::None, false))
+  {
+    ClearDisplayTexture();
+    return false;
+  }
+
+  GL_OBJECT_NAME(m_noise_smoothing_texture, "Noise smoothing texture");
+
+  GL_SCOPE_FMT("ApplyNoiseSmoothing({{{},{}}}, {}x{})", x, y, width, height);
+
+  m_display_texture->MakeReadyForSampling();
+  g_gpu_device->InvalidateRenderTarget(m_noise_smoothing_texture.get());
+  g_gpu_device->SetRenderTarget(m_noise_smoothing_texture.get());
+  g_gpu_device->SetPipeline(m_noise_smoothing_pipeline.get());
+  g_gpu_device->SetTextureSampler(0, m_display_texture, g_gpu_device->GetNearestSampler());
+  g_gpu_device->SetViewportAndScissor(0, 0, width, height);
+
+  const u32 uniforms[] = {x, y, width - 1, height - 1};
+  g_gpu_device->DrawWithPushConstants(3, 0, uniforms, sizeof(uniforms));
+
+  m_noise_smoothing_texture->MakeReadyForSampling();
+  SetDisplayTexture(m_noise_smoothing_texture.get(), 0, 0, width, height);
+  return true;
+}
+
 void GPUPresenter::CalculateDrawRect(s32 window_width, s32 window_height, bool apply_aspect_ratio, bool integer_scale,
                                      bool apply_alignment, GSVector4i* display_rect, GSVector4i* draw_rect) const
 {
@@ -1460,7 +1526,7 @@ bool GPUPresenter::UpdatePostProcessingSettings(bool force_reload, Error* error)
   {
     // something changed, need to recompile pipelines, the needed pipelines are based on alpha blend
     LoadOverlayTexture();
-    if (!CompileDisplayPipelines(true, false, false, error))
+    if (!CompileDisplayPipelines(true, false, false, false, error))
       return false;
   }
 

@@ -100,6 +100,7 @@ GraphicsSettingsWidget::GraphicsSettingsWidget(SettingsWindow* dialog, QWidget* 
   SettingWidgetBinder::BindWidgetToBoolSetting(sif, m_ui.pgxpDepthBuffer, "GPU", "PGXPDepthBuffer", false);
   SettingWidgetBinder::BindWidgetToBoolSetting(sif, m_ui.force43For24Bit, "Display", "Force4_3For24Bit", false);
   SettingWidgetBinder::BindWidgetToBoolSetting(sif, m_ui.chromaSmoothingFor24Bit, "GPU", "ChromaSmoothing24Bit", false);
+  SettingWidgetBinder::BindWidgetToBoolSetting(sif, m_ui.noiseSmoothingFor24Bit, "GPU", "NoiseSmoothing24Bit", false);
 
   connect(m_ui.renderer, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
           &GraphicsSettingsWidget::updateRendererDependentOptions);
@@ -451,6 +452,8 @@ GraphicsSettingsWidget::GraphicsSettingsWidget(SettingsWindow* dialog, QWidget* 
     tr("Switches back to 4:3 display aspect ratio when displaying 24-bit content, usually FMVs."));
   dialog->registerWidgetHelp(m_ui.chromaSmoothingFor24Bit, tr("FMV Chroma Smoothing"), tr("Unchecked"),
                              tr("Smooths out blockyness between colour transitions in 24-bit content, usually FMVs."));
+  dialog->registerWidgetHelp(m_ui.noiseSmoothingFor24Bit, tr("FMV Noise Smoothing"), tr("Unchecked"),
+                             tr("Smooths out noise such as compression artifacts in 24-bit content, usually FMVs."));
 
   // Advanced Tab
 

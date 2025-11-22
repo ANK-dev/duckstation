@@ -417,6 +417,11 @@ void GPU_SW::UpdateDisplay(const GPUBackendUpdateDisplayCommand* cmd)
           if (m_presenter.ApplyChromaSmoothing())
             m_presenter.Deinterlace(field);
         }
+        else if (is_24bit && g_gpu_settings.display_24bit_noise_smoothing)
+        {
+          if (m_presenter.ApplyNoiseSmoothing())
+            m_presenter.Deinterlace(field);
+        }
         else
         {
           m_presenter.Deinterlace(field);
@@ -430,6 +435,8 @@ void GPU_SW::UpdateDisplay(const GPUBackendUpdateDisplayCommand* cmd)
         m_presenter.SetDisplayTexture(m_upload_texture.get(), 0, 0, width, height);
         if (is_24bit && g_gpu_settings.display_24bit_chroma_smoothing)
           m_presenter.ApplyChromaSmoothing();
+        if (is_24bit && g_gpu_settings.display_24bit_noise_smoothing)
+          m_presenter.ApplyNoiseSmoothing();
       }
     }
   }
